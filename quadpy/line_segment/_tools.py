@@ -45,7 +45,6 @@ def integrate_adaptive(
     # Flatten the list of intervals so we can do good-bad bookkeeping via a list.
     intervals = intervals.reshape((2,) + domain_shape + (-1,))
     num_subintervals = 1
-    a_orig = a.reshape(-1)
     val_shape = val.shape
     val = val.reshape(range_shape + (-1,))
     error_estimate = error_estimate.reshape(range_shape + (-1,))
@@ -99,8 +98,6 @@ def integrate_adaptive(
             range_shape=range_shape,
         )
 
-        # relative interval lenghts
-        b = a / a_orig
 
         # mark good intervals, gather values and error estimates
         if numpy.any(a < minimum_interval_length):
@@ -114,16 +111,17 @@ def integrate_adaptive(
         ttv = total_val.copy()
         for j, i in enumerate(idx):
             ttv[..., i] += val[..., j]
+        ttv = ttv[...,idx]
 
         is_good = numpy.ones(error_estimate.shape[-1], dtype=bool)
         if eps_abs is not None:
             is_good = numpy.logical_and(
-                is_good, _numpy_all_except_last(error_estimate < eps_abs * b),
+                is_good, _numpy_all_except_last(error_estimate < eps_abs),
             )
         if eps_rel is not None:
             is_good = numpy.logical_and(
                 is_good,
-                _numpy_all_except_last(error_estimate < eps_rel * b * numpy.abs(ttv)),
+                _numpy_all_except_last(error_estimate < eps_rel * numpy.abs(ttv)),
             )
 
         # TODO speed up
